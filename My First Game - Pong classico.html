@@ -1,0 +1,208 @@
+<html>
+
+<canvas id="gameCanvas" width="800"
+height="600"></canvas>
+
+<script>
+var canvas;
+var canvasContext;
+var bola_X = 50;
+var bola_Y = 50;
+var bolaSpeedX = 10; // velocidade, movimento horizontal
+var bolaSpeedY = 5; //velocidade vertical
+
+var textoWin = false;
+
+var raquete1Y = 250;
+var raquete2Y = 250;
+
+const RAQUETE_ALTURA = 100; //padronizando raquetes
+const RAQUETE_LARGURA = 10;
+
+var p1Placar = 0;
+var p2Placar = 0;
+const WINNING_SCORE = 5;
+
+function calcularPosMouse(evt){
+	var rect = canvas.getBoundingClientRect();
+	var root = document.documentElement;
+	var mouseX = evt.clientX - rect.left - root.scrollLeft;
+	var mouseY = evt.clientY - rect.top - root.scrollTop;
+	return{
+		x:mouseX,
+		y:mouseY
+	}; //coordenadas do mouse dentro da area do jogo!
+}
+
+function clicaMouse(evt){
+	if(textoWin){
+		p1Placar = 0;
+		p2Placar = 0;
+		textoWin = false;
+	}
+}
+window.onload = function(){
+		
+	canvas = document.getElementById('gameCanvas');
+	canvasContext = canvas.getContext('2d');
+	
+	var framerate = 30;
+	setInterval(callBoth,1000/framerate);
+	/*(function(){
+		moveEverything();
+		drawEverything();
+	}, 1000/framerate); da pra deeclarar inline funcoes.
+	
+	*/
+	//setInterval(drawEverything, 100); //timer em ms
+	canvas.addEventListener('mousedown',clicaMouse);
+	
+	canvas.addEventListener('mousemove',
+	function(evt){
+		var mousePos = calcularPosMouse(evt);
+		raquete1Y = mousePos.y-(RAQUETE_ALTURA/2); //Topo da raquete fica 50 up
+	}); //tem que ficar dentro do onload!
+	}
+	
+	
+function callBoth(){
+	moveEverything();
+	drawEverything();
+} //usada pra usar 2 funcoes simultaneamente no mesmo setinterval
+
+function ballReset(){
+	if(p1Placar >= WINNING_SCORE || p2Placar >=WINNING_SCORE){
+		textoWin = true;
+	}
+	bolaSpeedX = -bolaSpeedX;
+	bolaSpeedY = -bolaSpeedY;
+	bola_X = canvas.width/2;
+	bola_Y = canvas.height/2;
+}
+
+function computerMovement(){
+	var raquete2YCentro = raquete2Y+(RAQUETE_ALTURA/2);
+	if(raquete2YCentro < bola_Y-15){ //-20 acima do centro
+		raquete2Y += 5;
+	} else if(raquete2YCentro > bola_Y+15){ //20 abaixo do centro
+			raquete2Y -= 5;
+	}
+}
+
+function moveEverything(){
+	if(textoWin){
+		return;
+	}
+	
+	computerMovement();
+	
+	bola_X = bola_X + bolaSpeedX;
+	//bolaSpeedX = bolaSpeedX +1; teste aceleracao
+	
+	bola_Y = bola_Y + bolaSpeedY;
+	
+	//codigo do bounce
+	
+	
+	if(bola_X < 40) /*&& (bola_X >= 20)*/{
+		console.log('if da bola'+bola_X);
+		//bolaSpeedX = -bolaSpeedX; // -(-x), matematica basica
+		if((bola_Y > raquete1Y &&
+			bola_Y <raquete1Y+RAQUETE_ALTURA) && (bola_X > 20)){ //
+			console.log("rebateu "+bola_X);
+			bolaSpeedX = - bolaSpeedX;
+
+			//upgrade - velocidade vertical
+			var deltaY = bola_Y
+						-(raquete1Y+RAQUETE_ALTURA/2);
+						bolaSpeedY = deltaY * 0.35;
+		} else if(bola_X<0){
+			console.log("resetando a bola -", bola_X);
+			p2Placar ++;
+			ballReset();
+		}
+		else{
+		console.log("posição bola else: ", bola_X);
+		}
+	
+	}
+	else{
+		console.log("bola pulou o primeiro if: ", bola_X);
+		}
+	
+	if(bola_X > canvas.width-40) {
+		//bolaSpeedX = -bolaSpeedX; //reverte a direcao
+		if((bola_Y > raquete2Y &&
+			bola_Y <raquete2Y+RAQUETE_ALTURA) && (bola_X < 780)){ //
+			console.log("rebateu "+bola_X);
+			bolaSpeedX = - bolaSpeedX;
+
+			var deltaY = bola_Y
+						-(raquete2Y+RAQUETE_ALTURA/2);
+						bolaSpeedY = deltaY * 0.35;
+		} else if(bola_X>canvas.width){
+			console.log("resetando a bola -", bola_X);
+			p1Placar++;
+			ballReset();
+		}
+	}
+	if(bola_Y <0){
+		bolaSpeedY = -bolaSpeedY;
+	}
+	if(bola_Y > canvas.height){
+		bolaSpeedY = -bolaSpeedY;
+	}
+}
+	
+	
+function drawEverything(){	
+	
+	// console.log("Valor bola X = "+bola_X); //teste
+	
+	//(x,y, comprimento, altura do objjeto)
+	fazRetangulo(0,0,canvas.width,canvas.height,'black'); //fundo 
+	
+	if(textoWin){
+		canvasContext.fillStyle='white';
+		if(p1Placar >= WINNING_SCORE){
+			canvasContext.fillStyle='white';
+			canvasContext.fillText("JOGADOR GANHOU",400,150);
+		}
+		else if (p2Placar >=WINNING_SCORE){
+			canvasContext.fillStyle='white';
+			canvasContext.fillText("CPU GANHOU",400,150);
+		}
+		canvasContext.fillText("GG, clique para continuar",400-25,300);
+		return;
+	}
+	//encapsulando mais
+	fazRetangulo(10,raquete1Y,RAQUETE_LARGURA,RAQUETE_ALTURA,'white'); //raquete esquerda
+	fazRetangulo(canvas.width-RAQUETE_LARGURA-10,raquete2Y,RAQUETE_LARGURA,RAQUETE_ALTURA,'white'); //raquete direita
+
+
+	//fazRetangulo(bola_X,200,10,10,'red'); bola quadrada
+	fazCirculo(bola_X,bola_Y,10,'red') //bola redonda
+	fazRede();
+	
+	canvasContext.fillText("Jogador 1: "+p1Placar,100,100);
+	canvasContext.fillText("Jogador 2: "+p2Placar,canvas.width-100,100);
+	}
+
+function fazRetangulo(leftX,topY, width,height, drawColor){
+	canvasContext.fillStyle = drawColor;
+	canvasContext.fillRect(leftX,topY, width, height);
+}
+function fazCirculo(centroX,centroY,raio,drawColor){
+	canvasContext.fillStyle = drawColor;
+	canvasContext.beginPath();
+	canvasContext.arc(centroX,centroY ,raio, 0, Math.PI*2, true);
+	canvasContext.fill();
+
+}
+function fazRede(){
+	for(var i=0;i<canvas.height;i+=40){
+		fazRetangulo(canvas.width/2-1,i,5,20,'white');
+	}
+}
+</script>
+</html>
